@@ -1,0 +1,51 @@
+from dotenv import load_dotenv
+import os
+import google.generativeai as genai
+import pandas as pd
+import re
+from contextlib import redirect_stdout
+from io import StringIO
+
+# Load Google API key from .env file
+load_dotenv()
+genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Use double backslashes or a raw string for the file path
+file_path = r"C:\Users\vinum\Desktop\Hitesh\google_api\vgsales.csv"
+df = pd.read_csv(file_path)
+
+# Function to load Gemini Pro model
+model = genai.GenerativeModel("gemini-pro")
+
+def get_gemini(Question, file_name):
+    # Assuming model.generate_content is a function that generates a response based on the input question
+    response = model.generate_content(Question)
+    return f"{response.text} for file {file_name}"
+
+# Use f-string to include DataFrame columns and file name in the question
+variable = input("Enter the Query: ")
+question = f"Use the dataframe with name df with columns {df.columns} and generate python code for "+variable
+
+response = get_gemini(question, os.path.basename(file_path))
+# Characters to find
+char1 = '#'
+char2 = ')'
+
+# Find the start index of the first character
+start_index1 = response.find(char1)
+
+# Find the start index of the second character from the end
+start_index2 = response.rfind(char2)
+exec_code = response[start_index1:start_index2+1]
+
+# Capture the output of the exec function
+with StringIO() as output_buffer:
+    with redirect_stdout(output_buffer):
+        exec(exec_code)
+
+    # Get the captured output as a string
+    captured_output = output_buffer.getvalue()
+
+# Now, you can use the captured_output variable as needed
+print("Captured Output:")
+print(captured_output)
